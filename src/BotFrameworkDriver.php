@@ -9,6 +9,7 @@ use BotMan\BotMan\Messages\Incoming\Answer;
 use BotMan\BotMan\Messages\Attachments\Image;
 use BotMan\BotMan\Messages\Attachments\Video;
 use BotMan\BotMan\Messages\Outgoing\Question;
+use Illuminate\Support\Facades\Log;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\ParameterBag;
@@ -71,7 +72,10 @@ class BotFrameworkDriver extends HttpDriver
     public function getMessages()
     {
         // replace bot's name for group chats and special characters that might be sent from Web Skype
-        $pattern = '/<at id=(.*?)at>[^(\x20-\x7F)\x0A]*\s*/';
+//        $pattern = '/<at id=(.*?)at>[^(\x20-\x7F)\x0A]*\s*/';
+//        $message = preg_replace($pattern, '', $this->event->get('text'));
+
+        $pattern = '/(<at>(.*)<\/at>)\s*/';
         $message = preg_replace($pattern, '', $this->event->get('text'));
 
         if (empty($this->messages)) {
@@ -132,6 +136,8 @@ class BotFrameworkDriver extends HttpDriver
         ]);
         $responseData = json_decode($response->getContent());
 
+        Log::info($responseData->access_token);
+
         return $responseData->access_token;
     }
 
@@ -189,8 +195,14 @@ class BotFrameworkDriver extends HttpDriver
          */
         $recipient = $matchingMessage->getRecipient() === '' ? $matchingMessage->getSender() : $matchingMessage->getRecipient();
         $payload = is_null($matchingMessage->getPayload()) ? [] : $matchingMessage->getPayload()->all();
+        if(isset($additionalParameters['conversation'])) {
+            $conversation = $additionalParameters['conversation'];
+            $additionalParameters['serviceUrl'] = $additionalParameters['serviceUrl'];
+        } else {
+            $conversation = urlencode($payload['conversation']['id']);
+        }
         $this->apiURL = Collection::make($payload)->get('serviceUrl',
-                Collection::make($additionalParameters)->get('serviceUrl')).'/v3/conversations/'.urlencode($recipient).'/activities';
+                Collection::make($additionalParameters)->get('serviceUrl')).'/v3/conversations/'.$conversation.'/activities';
 
         if (strstr($this->apiURL, 'webchat.botframework')) {
             $parameters['from'] = [
@@ -211,6 +223,8 @@ class BotFrameworkDriver extends HttpDriver
             'Content-Type:application/json',
             'Authorization:Bearer '.$this->getAccessToken(),
         ];
+
+        unset($payload['conversation']);
 
         return $this->http->post($this->apiURL, [], $payload, $headers, true);
     }
