@@ -136,8 +136,6 @@ class BotFrameworkDriver extends HttpDriver
         ]);
         $responseData = json_decode($response->getContent());
 
-        Log::info($responseData->access_token);
-
         return $responseData->access_token;
     }
 
@@ -161,6 +159,7 @@ class BotFrameworkDriver extends HttpDriver
                 [
                     'contentType' => 'application/vnd.microsoft.card.hero',
                     'content' => [
+                        'title' => $message->getTitle(),
                         'text' => $message->getText(),
                         'buttons' => $this->convertQuestion($message),
                     ],
