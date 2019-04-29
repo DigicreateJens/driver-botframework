@@ -72,11 +72,11 @@ class BotFrameworkDriver extends HttpDriver
     public function getMessages()
     {
         // replace bot's name for group chats and special characters that might be sent from Web Skype
-//        $pattern = '/<at id=(.*?)at>[^(\x20-\x7F)\x0A]*\s*/';
-//        $message = preg_replace($pattern, '', $this->event->get('text'));
-
-        $pattern = '/(<at>(.*)<\/at>)\s*/';
+        $pattern = '/<at id=(.*?)at>[^(\x20-\x7F)\x0A]*\s*/';
         $message = preg_replace($pattern, '', $this->event->get('text'));
+
+//        $pattern = '/(<at>(.*)<\/at>)\s*/';
+//        $message = preg_replace($pattern, '', $this->event->get('text'));
 
         if (empty($this->messages)) {
             $this->messages = [
@@ -189,19 +189,20 @@ class BotFrameworkDriver extends HttpDriver
             $parameters['text'] = $message;
         }
 
+
         /**
          * Originated messages use the getSender method, otherwise getRecipient.
          */
         $recipient = $matchingMessage->getRecipient() === '' ? $matchingMessage->getSender() : $matchingMessage->getRecipient();
         $payload = is_null($matchingMessage->getPayload()) ? [] : $matchingMessage->getPayload()->all();
-        if(isset($additionalParameters['conversation'])) {
-            $conversation = $additionalParameters['conversation'];
-            $additionalParameters['serviceUrl'] = $additionalParameters['serviceUrl'];
-        } else {
-            $conversation = urlencode($payload['conversation']['id']);
-        }
+//        if(isset($additionalParameters['conversation'])) {
+//            $conversation = $additionalParameters['conversation'];
+//            $additionalParameters['serviceUrl'] = $additionalParameters['serviceUrl'];
+//        } else {
+//            $conversation = urlencode($payload['conversation']['id']);
+//        }
         $this->apiURL = Collection::make($payload)->get('serviceUrl',
-                Collection::make($additionalParameters)->get('serviceUrl')).'/v3/conversations/'.$conversation.'/activities';
+                                                        Collection::make($additionalParameters)->get('serviceUrl')).'/v3/conversations/'.urlencode($recipient).'/activities';
 
         if (strstr($this->apiURL, 'webchat.botframework')) {
             $parameters['from'] = [
